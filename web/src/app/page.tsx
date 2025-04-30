@@ -8,24 +8,52 @@ export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    const { error } = isLogin
-      ? await supabase.auth.signInWithPassword({ email, password })
-      : await supabase.auth.signUp({ email, password });
-
-    if (error) {
-      setError(error.message);
-    } else {
-      router.push('/');
+    if (!isLogin && password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
     }
+
+    setLoading(true);
+
+    if (isLogin) {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setError(error.message);
+      } else {
+        router.push('/');
+      }
+    } else {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            firstName,
+            lastName,
+          },
+        },
+      });
+      if (error) {
+        setError(error.message);
+      } else {
+        router.push('/');
+      }
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -34,30 +62,59 @@ export default function LoginPage() {
         {isLogin ? 'Login' : 'Sign Up'}
       </h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {!isLogin && (
+          <>
+            <input
+              type="text"
+              placeholder="First Name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className="border p-2 rounded"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Last Name"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className="border p-2 rounded"
+              required
+            />
+          </>
+        )}
         <input
           type="email"
-          className="border p-2 rounded"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          className="border p-2 rounded"
           required
         />
         <input
           type="password"
-          className="border p-2 rounded"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          className="border p-2 rounded"
           required
         />
-
+        {!isLogin && (
+          <input
+            type="password"
+            placeholder="Confirm Password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="border p-2 rounded"
+            required
+          />
+        )}
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+          className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+          disabled={loading}
         >
-          {isLogin ? 'Login' : 'Sign Up'}
+          {loading ? 'Processing...' : isLogin ? 'Login' : 'Sign Up'}
         </button>
-
         <button
           type="button"
           onClick={() => setIsLogin(!isLogin)}
@@ -65,7 +122,6 @@ export default function LoginPage() {
         >
           {isLogin ? 'Need an account? Sign up' : 'Already have an account? Log in'}
         </button>
-
         {error && <p className="text-red-500 text-sm">{error}</p>}
       </form>
     </div>
