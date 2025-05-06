@@ -40,12 +40,12 @@ export default function LoginPage() {
         email,
         password,
       });
-    
+
       if (signUpError) {
         setError(signUpError.message);
       } else {
         const userId = data.user?.id;
-    
+
         if (userId) {
           const { error: profileError } = await supabase.from('profiles').insert({
             user_id: userId,
@@ -53,18 +53,18 @@ export default function LoginPage() {
             last_name: lastName,
             email,
           });
-    
+
           if (profileError) {
             setError(profileError.message);
             setLoading(false);
             return;
           }
         }
-    
+
         router.push('/');
       }
     }
-    
+
     setLoading(false);
   };
 
