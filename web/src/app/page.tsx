@@ -36,23 +36,35 @@ export default function LoginPage() {
         router.push('/');
       }
     } else {
-      const { error } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            firstName,
-            lastName,
-          },
-        },
       });
-      if (error) {
-        setError(error.message);
+    
+      if (signUpError) {
+        setError(signUpError.message);
       } else {
+        const userId = data.user?.id;
+    
+        if (userId) {
+          const { error: profileError } = await supabase.from('profiles').insert({
+            user_id: userId,
+            first_name: firstName,
+            last_name: lastName,
+            email,
+          });
+    
+          if (profileError) {
+            setError(profileError.message);
+            setLoading(false);
+            return;
+          }
+        }
+    
         router.push('/');
       }
     }
-
+    
     setLoading(false);
   };
 
