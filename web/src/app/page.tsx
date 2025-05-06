@@ -20,14 +20,14 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
+  
     if (!isLogin && password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
-
+  
     setLoading(true);
-
+  
     if (isLogin) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
@@ -36,25 +36,16 @@ export default function LoginPage() {
         router.push('/');
       }
     } else {
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      await supabase.auth.signUp({
         email,
         password,
       });
-
-      if (signUpError) {
-        setError(signUpError.message);
-        setLoading(false);
-        return;
-      }
-
-      // ✅ Explicitly fetch session to get user ID
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-
+  
+      // ✅ Explicitly fetch session and user ID
+      const { data: sessionData } = await supabase.auth.getSession();
+      const session = sessionData.session;
       const userId = session?.user?.id;
-
+  
       if (userId) {
         const { error: profileError } = await supabase.from('profiles').insert({
           user_id: userId,
@@ -62,7 +53,7 @@ export default function LoginPage() {
           last_name: lastName,
           email,
         });
-
+  
         if (profileError) {
           setError(profileError.message);
           setLoading(false);
@@ -73,12 +64,13 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-
+  
       router.push('/');
     }
-
+  
     setLoading(false);
   };
+  
 
   return (
     <div className="max-w-md mx-auto mt-20">
