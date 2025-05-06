@@ -43,26 +43,38 @@ export default function LoginPage() {
 
       if (signUpError) {
         setError(signUpError.message);
-      } else {
-        const userId = data.user?.id;
-
-        if (userId) {
-          const { error: profileError } = await supabase.from('profiles').insert({
-            user_id: userId,
-            first_name: firstName,
-            last_name: lastName,
-            email,
-          });
-
-          if (profileError) {
-            setError(profileError.message);
-            setLoading(false);
-            return;
-          }
-        }
-
-        router.push('/');
+        setLoading(false);
+        return;
       }
+
+      // ✅ Explicitly fetch session to get user ID
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      const userId = session?.user?.id;
+
+      if (userId) {
+        const { error: profileError } = await supabase.from('profiles').insert({
+          user_id: userId,
+          first_name: firstName,
+          last_name: lastName,
+          email,
+        });
+
+        if (profileError) {
+          setError(profileError.message);
+          setLoading(false);
+          return;
+        }
+      } else {
+        setError("Could not get user ID from session.");
+        setLoading(false);
+        return;
+      }
+
+      router.push('/');
     }
 
     setLoading(false);
