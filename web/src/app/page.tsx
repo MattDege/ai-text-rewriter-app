@@ -20,14 +20,14 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-  
+
     if (!isLogin && password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
-  
+
     setLoading(true);
-  
+
     if (isLogin) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
@@ -36,16 +36,19 @@ export default function LoginPage() {
         router.push('/');
       }
     } else {
-      await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
       });
-  
-      // ✅ Explicitly fetch session and user ID
-      const { data: sessionData } = await supabase.auth.getSession();
-      const session = sessionData.session;
-      const userId = session?.user?.id;
-  
+
+      if (signUpError) {
+        setError(signUpError.message);
+        setLoading(false);
+        return;
+      }
+
+      const userId = signUpData?.user?.id;
+
       if (userId) {
         const { error: profileError } = await supabase.from('profiles').insert({
           user_id: userId,
@@ -53,24 +56,23 @@ export default function LoginPage() {
           last_name: lastName,
           email,
         });
-  
+
         if (profileError) {
           setError(profileError.message);
           setLoading(false);
           return;
         }
       } else {
-        setError("Could not get user ID from session.");
+        setError('User ID not returned from sign-up.');
         setLoading(false);
         return;
       }
-  
+
       router.push('/');
     }
-  
+
     setLoading(false);
   };
-  
 
   return (
     <div className="max-w-md mx-auto mt-20">
