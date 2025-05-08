@@ -36,48 +36,38 @@ export default function LoginPage() {
         router.push('/');
       }
     } else {
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
       });
 
       if (signUpError) {
         setError(signUpError.message);
-        setLoading(false);
-        return;
+      } else {
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        const userId = sessionData.session?.user?.id;
+
+        if (!userId) {
+          setError('Could not get user ID from session.');
+          setLoading(false);
+          return;
+        }
+
+        const { error: profileError } = await supabase.from('profiles').insert({
+          user_id: userId,
+          first_name: firstName,
+          last_name: lastName,
+          email,
+        });
+
+        if (profileError) {
+          setError(profileError.message);
+          setLoading(false);
+          return;
+        }
+
+        router.push('/');
       }
-
-      // Wait for session to become available
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-
-      if (sessionError || !session?.user?.id) {
-        setError('Could not get user ID from session.');
-        console.log('Session error:', sessionError);
-        setLoading(false);
-        return;
-      }
-
-      const userId = session.user.id;
-      console.log('User ID:', userId);
-
-      const { error: profileError } = await supabase.from('profiles').insert({
-        user_id: userId,
-        first_name: firstName,
-        last_name: lastName,
-        email,
-      });
-
-      if (profileError) {
-        setError(profileError.message);
-        console.log('Insert error:', profileError);
-        setLoading(false);
-        return;
-      }
-
-      router.push('/');
     }
 
     setLoading(false);
