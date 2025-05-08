@@ -29,14 +29,14 @@ export default function LoginPage() {
     setLoading(true);
 
     if (isLogin) {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        setError(error.message);
+      const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+      if (loginError) {
+        setError(loginError.message);
       } else {
         router.push('/');
       }
     } else {
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
       });
@@ -47,11 +47,10 @@ export default function LoginPage() {
         return;
       }
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user?.id;
+      const userId = signUpData?.user?.id;
 
       if (!userId) {
-        setError('Could not get user ID from session.');
+        setError('Could not get user ID from sign-up response.');
         setLoading(false);
         return;
       }
