@@ -36,7 +36,7 @@ export default function LoginPage() {
         router.push('/');
       }
     } else {
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
       });
@@ -47,15 +47,15 @@ export default function LoginPage() {
         return;
       }
 
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-const userId = sessionData?.session?.user?.id;
+      // Wait for session to be established
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
 
-if (!userId) {
-  setError('Could not get user ID from session.');
-  setLoading(false);
-  return;
-}
-
+      if (!userId) {
+        setError('Could not get user ID from session.');
+        setLoading(false);
+        return;
+      }
 
       const { error: profileError } = await supabase.from('profiles').insert({
         user_id: userId,
