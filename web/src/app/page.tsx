@@ -47,13 +47,15 @@ export default function LoginPage() {
         return;
       }
 
-      const userId = signUpData?.user?.id;
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+const userId = sessionData?.session?.user?.id;
 
-      if (!userId) {
-        setError('Could not get user ID from sign-up response.');
-        setLoading(false);
-        return;
-      }
+if (!userId) {
+  setError('Could not get user ID from session.');
+  setLoading(false);
+  return;
+}
+
 
       const { error: profileError } = await supabase.from('profiles').insert({
         user_id: userId,
